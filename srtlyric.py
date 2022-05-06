@@ -94,19 +94,17 @@ class Wyy(Lyric):
 
 class LyricToSrt(object):
     def __int__(self):
-        self.interval = 8
-        self.version = 20220506
+        self.version = 20220507
         self.headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36"
         }
-        self.count = 0
 
     def check_version(self):
         try:
-            version_resp = requests.get("https://gitee.com/djj45/lrc2srt/raw/master/version", headers=self.headers)
+            version_resp = requests.get("https://gitee.com/djj45/srtlyric/raw/master/version", headers=self.headers)
         except:
             try:
-                version_resp = requests.get("https://raw.githubusercontent.com/djj45/lrc2srt/master/version",
+                version_resp = requests.get("https://raw.githubusercontent.com/djj45/srtlyric/master/version",
                                             headers=self.headers)
             except:
                 return "error"
@@ -126,10 +124,7 @@ class LyricToSrt(object):
 
     @staticmethod
     def is_lyric(line):
-        if line[-1] != "]":
-            return True
-        else:
-            return False
+        return line.split(":")[0].split("[")[1].isdigit()
 
     @staticmethod
     def get_time(line):
@@ -157,7 +152,7 @@ class LyricToSrt(object):
     def extend_time(self, lyric_time):
         bit = len(lyric_time.split(".")[1])
         duration = self.time_trans(lyric_time)
-        duration += self.interval
+        duration += 8
         decimal = str(duration).split(".")[1]
         num = int(str(duration).split(".")[0])
         minutes = str(num // 60)
@@ -171,17 +166,17 @@ class LyricToSrt(object):
         return minutes + ":" + seconds + "." + decimal
 
     def check_time(self, pre_lyric_time, lyric_time, pre_lyric, border_flag):
-        if self.time_trans(lyric_time) - self.time_trans(pre_lyric_time) > self.interval:
+        if self.time_trans(lyric_time) - self.time_trans(pre_lyric_time) > 8:
             print(pre_lyric_time + " --> " + lyric_time + " " + pre_lyric.replace("\n", ""))
         elif self.time_trans(pre_lyric_time) - self.time_trans(lyric_time) > 50:
             lyric_time = self.extend_time(pre_lyric_time)
             border_flag = True
         return lyric_time, border_flag
 
-    def write_content(self, pre_lyric_time, lyric_time, pre_lyric, last_flag=False):
+    def write_content(self, count, pre_lyric_time, lyric_time, pre_lyric, last_flag=False):
         if not last_flag:
             return (
-                    str(self.count)
+                    str(count)
                     + "\n"
                     + "00:"
                     + pre_lyric_time.replace(".", ",")
@@ -190,11 +185,12 @@ class LyricToSrt(object):
                     + lyric_time.replace(".", ",")
                     + "\n"
                     + pre_lyric
+                    + "\\n"
                     + "\n\n"
             )
         else:
             return (
-                    str(self.count)
+                    str(count)
                     + "\n"
                     + "00:"
                     + pre_lyric_time.replace(".", ",")
@@ -203,8 +199,36 @@ class LyricToSrt(object):
                     + self.extend_time(lyric_time).replace(".", ",")
                     + "\n"
                     + pre_lyric
+                    + "\\n"
                     + "\n\n"
             )
+
+    def write_srt(self, file_name, lyric_list):
+        first_lyric_flag = True
+        border_flag = False
+        count = 0
+        with open(file_name + ".srt", "w", encoding="utf-8") as srt:
+            for line in lyric_list:
+                line = line.replace("//", "")
+                if not self.is_lyric(line):
+                    continue
+                if first_lyric_flag:
+                    pre_time = self.get_time(line)
+                    pre_lyric = self.get_lyric(line)
+                    first_lyric_flag = False
+                    continue
+                count += 1
+                time = self.get_time(line)
+                time, border_flag = self.check_time(pre_time, time, pre_lyric, border_flag)
+                srt.write(self.write_content(count, pre_time, time, pre_lyric))
+                pre_time = time
+                pre_lyric = self.get_lyric(line)
+                if border_flag:
+                    pre_time = self.get_time(line)
+                    border_flag = False
+            count += 1
+            srt.write(self.write_content(count, pre_time, time, pre_lyric, True))
+        srt.close()
 
 
 def get_song_id(user_input):
@@ -212,6 +236,8 @@ def get_song_id(user_input):
         return user_input.split("=")[1].strip()
     elif user_input.find("/") != -1:
         return user_input.split("/")[-1].strip()
+    else:
+        return user_input.strip()
 
 
 if __name__ == "__main__":
@@ -223,4 +249,15 @@ if __name__ == "__main__":
         lyric = Wyy(song_id)
     else:
         lyric = QQ(song_id)
-    lyric.write_lrc_file(lyric.full_name, lyric.lyric_list)
+    srt = LyricToSrt()
+    srt.write_srt(lyric.full_name, lyric.lyric_list)
+    latest_version = srt.get_version()
+    if latest_version == "error":
+        os.system("")
+        print("\033[1;31;40m版本检查失败,请检查网络连接\033[0m")
+    elif latest_version > srt.version:
+        os.system("")
+        print(
+            "\033[1;31;40m有新版本,下载链接\nhttps://gitee.com/djj45/srtlyric/releases\nhttps://github.com/djj45/srtlyric/releases\033[0m"
+        )
+    os.system("pause")
