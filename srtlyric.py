@@ -77,8 +77,8 @@ class QQ(Lyric):
         }
         self.song_info = requests.get(url=self.info_url, headers=self.headers, params=self.params).text
         self.info_dict = json.loads(self.song_info.replace("MusicJsonCallback_lrc(", "").replace(")", ""))
-        self.song_name = self.info_dict["data"][0]["name"]
-        self.singer_name = self.info_dict["data"][0]["singer"][0]["name"]
+        self.song_name = self.info_dict["data"][0]["name"].replace("/", "-").replace("&", "-")
+        self.singer_name = self.info_dict["data"][0]["singer"][0]["name"].replace("/", "-").replace("&", "-")
         self.full_name = self.song_name + "-" + self.singer_name
         self.get_content = requests.get(url=self.lyric_url, headers=self.headers, params=self.params).text
         self.lyric_dict = json.loads(self.get_content.replace("MusicJsonCallback_lrc(", "").replace(")", ""))
@@ -94,8 +94,8 @@ class Wyy(Lyric):
         self.info_url = "http://music.163.com/api/song/detail/?id=" + self.song_id + "&ids=[" + self.song_id + "]"
         self.song_info = requests.get(url=self.info_url, headers=self.headers).text
         self.info_dict = json.loads(self.song_info)
-        self.song_name = self.info_dict["songs"][0]["name"]
-        self.singer_name = self.info_dict["songs"][0]["artists"][0]["name"]
+        self.song_name = self.info_dict["songs"][0]["name"].replace("/", "-").replace("&", "-")
+        self.singer_name = self.info_dict["songs"][0]["artists"][0]["name"].replace("/", "-").replace("&", "-")
         self.full_name = self.song_name + "-" + self.singer_name
         self.get_content = requests.get(url=self.lyric_url, headers=self.headers)
         self.lyric_dict = json.loads(self.get_content.text)
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36"
     }
-    version = 20220507.9421
+    version = 20220507.9422
     os.system("")
     print("\033[1;32;40m显示持续时间大于8秒的歌词,请注意是否为间奏,同时注意最后一句歌词(默认持续时间为8秒)\033[0m")
     print("\033[1;32;40m请输入链接或者歌曲id\033[0m")
