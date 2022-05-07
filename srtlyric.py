@@ -18,16 +18,28 @@ class Lyric(object):
 
     @staticmethod
     def get_lyric_list(line, lyric, trans_lyric, lyric_list):
+        count = 0
+        lyric_len = len(lyric)
         for content in lyric:
+            count += 1
             if content == "\n":
                 lyric_list.append(line)
                 line = ""
+            elif count == lyric_len:
+                line += content
+                lyric_list.append(line)
             else:
                 line += content
+        count = 0
+        trans_lyric_len = len(trans_lyric)
         for content in trans_lyric:
+            count += 1
             if content == "\n":
                 lyric_list.append(line)
                 line = ""
+            elif count == trans_lyric_len:
+                line += content
+                lyric_list.append(line)
             else:
                 line += content
 
@@ -50,7 +62,7 @@ class QQ(Lyric):
         }
         self.params = {
             "callback": "MusicJsonCallback_lrc",
-            "pcachetime": str(round(time.time(), 3)).replace(".", ""),
+            "pcachetime": str(round(time.time(), 3)).replace(".", ""),  # pcachetime随便写一个固定值也可以
             "songmid": self.song_id,
             "g_tk": "5381",
             "jsonpCallback": "MusicJsonCallback_lrc",
@@ -93,9 +105,6 @@ class Wyy(Lyric):
 
 
 class LyricToSrt(object):
-    def __int__(self):
-        pass
-
     @staticmethod
     def check_version(headers):
         try:
@@ -242,7 +251,7 @@ if __name__ == "__main__":
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36"
     }
-    version = 20220507
+    version = 20220507.942
     os.system("")
     print("\033[1;32;40m显示持续时间大于8秒的歌词,请注意是否为间奏,同时注意最后一句歌词(默认持续时间为8秒)\033[0m")
     print("\033[1;32;40m请输入链接或者歌曲id\033[0m")
@@ -251,6 +260,7 @@ if __name__ == "__main__":
         lyric = Wyy(song_id)
     else:
         lyric = QQ(song_id)
+    print("\033[1;34;40m\n%s\033[0m" % lyric.full_name)
     srt = LyricToSrt()
     srt.write_srt(lyric.full_name, lyric.lyric_list)
     latest_version = srt.get_version(headers)
